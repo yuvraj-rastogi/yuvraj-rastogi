@@ -1,3 +1,3 @@
 <p align="center">
-  <img src="https://ascii-api.vercel.app/api/card?user=yuvraj-rastogi&donut=ascii&sig=379e047dc7c32261b2d12ded87040f77770556ebd68ff7a6ce3511ecc369d570" alt="3D ASCII Donut" width="auto" />
+  <img src="https://ascii-api.vercel.app/api/card?user=yuvraj-rastogi&donut=ascii&ts=1794041525&sig=c733219baa629074ac62448328b5e63fe0b2ba285eb67e32b98979618c3382ff" alt="3D ASCII Donut" width="auto" />
 </p>
