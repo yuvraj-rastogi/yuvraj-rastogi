@@ -1,0 +1,70 @@
+name: Rotate ASCII Card Security Token
+
+on:
+  schedule:
+    # Runs daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Rotate Signed Card URL in README
+        env:
+          API_SECRET_KEY: ${{ secrets.API_SECRET_KEY }}
+          ALLOWED_USER: 'yuvraj-rastogi'
+        run: |
+          node -e '
+            const crypto = require("crypto");
+            const fs = require("fs");
+
+            const secret = process.env.API_SECRET_KEY;
+            if (!secret) {
+              console.error("Missing API_SECRET_KEY secret!");
+              process.exit(1);
+            }
+
+            const readme = fs.readFileSync("README.md", "utf8");
+            const regex = /https:\/\/ascii-api\.vercel\.app\/api\/card\?[^"'\s)]+/g;
+
+            const updated = readme.replace(regex, (urlStr) => {
+              const u = new URL(urlStr);
+              const p = Object.fromEntries(u.searchParams.entries());
+              p.user = process.env.ALLOWED_USER || "yuvraj-rastogi";
+              p.ts = String(Math.floor(Date.now() / 1000));
+              delete p.sig;
+
+              const payload = Object.keys(p).sort().map(k => `${k}=${p[k]}`).join("&");
+              const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+              p.sig = sig;
+
+              return `https://ascii-api.vercel.app/api/card?${new URLSearchParams(p).toString()}`;
+            });
+
+            if (readme !== updated) {
+              fs.writeFileSync("README.md", updated, "utf8");
+              console.log("README.md updated with fresh rolling token!");
+            } else {
+              console.log("No card URL found or already updated.");
+            }
+          '
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: auto-rotate ASCII card security token [skip ci]" || echo "No changes to commit"
+          git push
+
