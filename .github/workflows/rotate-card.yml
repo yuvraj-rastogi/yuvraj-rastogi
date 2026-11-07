@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs daily at midnight UTC
     - cron: '0 0 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch: # Allows manual run button
 
 permissions:
   contents: write
@@ -12,6 +12,8 @@ permissions:
 jobs:
   rotate:
     runs-on: ubuntu-latest
+    # Allows reading from Environment Secret named API_SECRET_KEY
+    environment: API_SECRET_KEY
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -26,40 +28,48 @@ jobs:
           API_SECRET_KEY: ${{ secrets.API_SECRET_KEY }}
           ALLOWED_USER: 'yuvraj-rastogi'
         run: |
-          node -e '
-            const crypto = require("crypto");
-            const fs = require("fs");
+          node - << 'EOF'
+          const crypto = require('crypto');
+          const fs = require('fs');
 
-            const secret = process.env.API_SECRET_KEY;
-            if (!secret) {
-              console.error("Missing API_SECRET_KEY secret!");
-              process.exit(1);
-            }
+          const secret = process.env.API_SECRET_KEY;
+          if (!secret) {
+            console.error('[ERROR] Missing API_SECRET_KEY secret!');
+            process.exit(1);
+          }
 
-            const readme = fs.readFileSync("README.md", "utf8");
-            const regex = /https:\/\/ascii-api\.vercel\.app\/api\/card\?[^"'\s)]+/g;
+          const user = process.env.ALLOWED_USER || 'yuvraj-rastogi';
+          const readmePath = 'README.md';
 
-            const updated = readme.replace(regex, (urlStr) => {
-              const u = new URL(urlStr);
-              const p = Object.fromEntries(u.searchParams.entries());
-              p.user = process.env.ALLOWED_USER || "yuvraj-rastogi";
-              p.ts = String(Math.floor(Date.now() / 1000));
-              delete p.sig;
+          if (!fs.existsSync(readmePath)) {
+            console.error('[ERROR] README.md not found in root.');
+            process.exit(1);
+          }
 
-              const payload = Object.keys(p).sort().map(k => `${k}=${p[k]}`).join("&");
-              const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-              p.sig = sig;
+          const readme = fs.readFileSync(readmePath, 'utf8');
+          const regex = /https:\/\/ascii-api\.vercel\.app\/api\/card\?[^"'\s)]+/g;
 
-              return `https://ascii-api.vercel.app/api/card?${new URLSearchParams(p).toString()}`;
-            });
+          const updated = readme.replace(regex, (urlStr) => {
+            const u = new URL(urlStr);
+            const p = Object.fromEntries(u.searchParams.entries());
+            p.user = user;
+            p.ts = String(Math.floor(Date.now() / 1000));
+            delete p.sig;
 
-            if (readme !== updated) {
-              fs.writeFileSync("README.md", updated, "utf8");
-              console.log("README.md updated with fresh rolling token!");
-            } else {
-              console.log("No card URL found or already updated.");
-            }
-          '
+            const payload = Object.keys(p).sort().map(k => k + '=' + p[k]).join('&');
+            const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+            p.sig = sig;
+
+            return 'https://ascii-api.vercel.app/api/card?' + new URLSearchParams(p).toString();
+          });
+
+          if (readme !== updated) {
+            fs.writeFileSync(readmePath, updated, 'utf8');
+            console.log('[OK] README.md updated with fresh rolling token!');
+          } else {
+            console.log('[INFO] Card URL is already up to date.');
+          }
+          EOF
 
       - name: Commit and Push Changes
         run: |
@@ -67,4 +77,3 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "chore: auto-rotate ASCII card security token [skip ci]" || echo "No changes to commit"
           git push
-
