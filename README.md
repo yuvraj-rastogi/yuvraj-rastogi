@@ -1,3 +1,3 @@
 <p align="center">
-  <img src="https://ascii-api.vercel.app/api/card?user=yuvraj-rastogi&speed=fast&donut=ascii&skills=Docker%2C+Linux%2C+Kubernetes%2C+Rust&frameworks=Next.js%2C+React%2C+Node.js&languages=TypeScript%2C+Go%2C+Python&ts=1794457920&sig=db0dea5b4563afc5106801bff476483a62ccd8b6901149aad60606209da2b307" alt="3D ASCII Donut" width="auto" />
+  <img src="https://ascii-api.vercel.app/api/card?user=yuvraj-rastogi&speed=fast&donut=ascii&skills=Docker%2C+Linux%2C+Kubernetes%2C+Rust&frameworks=Next.js%2C+React%2C+Node.js&languages=TypeScript%2C+Go%2C+Python&ts=1794541579&sig=1c299d8ed28a5987e25d30b463428551f5497247a3be5c12dd38d8df74b32533" alt="3D ASCII Donut" width="auto" />
 </p>
